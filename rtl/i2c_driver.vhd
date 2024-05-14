@@ -43,6 +43,8 @@ architecture rtl of i2c_driver is
 	signal 	r_scl 		: std_logic := '1';
 	signal	r_bit_cnt	: unsigned(3 downto 0) := (others => '0');
 	
+	signal r_bus_addr_rw : unsigned(7 downto 0) := (others => '0');
+	signal r_bus_data 	: unsigned(7 downto 0) := (others => '0');
 	
 	
 
@@ -63,49 +65,54 @@ begin
 			
 			if r_en_0 = '0' and i_en = '1' then
 				
-				o_sda 	<= '0';
-				r_state 	<= start;
+				o_sda 			<= '0';
+				r_state 			<= start;
+				o_rdy				<= '1';
+				r_bus_addr_rw 	<= i_bus_addr_rw;
+				r_bus_data		<= i_bus_data;
 				
 			else
-				o_sda <= '1';
+				o_sda 			<= '1';
+				o_rdy 			<= '0';
 				
 			end if;
 		
 		when start =>
 		
-			o_sda 	<= i_bus_addr_rw(7);
+			o_sda 	<= r_bus_addr_rw(7);
 			r_state	<= addr_transmit;
+			o_rdy 	<= '0';
 			
 		when addr_transmit =>
 					
 			case r_bit_cnt is
 			
 				when "0000" =>
-					o_sda 		<= i_bus_addr_rw(6);
+					o_sda 		<= r_bus_addr_rw(6);
 					r_bit_cnt 	<= r_bit_cnt + "0001";
 					
 				when "0001" =>
-					o_sda 		<= i_bus_addr_rw(5);
+					o_sda 		<= r_bus_addr_rw(5);
 					r_bit_cnt 	<= r_bit_cnt + "0001";
 				
 				when "0010" =>
-					o_sda 		<= i_bus_addr_rw(4);
+					o_sda 		<= r_bus_addr_rw(4);
 					r_bit_cnt 	<= r_bit_cnt + "0001";
 					
 				when "0011" =>
-					o_sda 		<= i_bus_addr_rw(3);
+					o_sda 		<= r_bus_addr_rw(3);
 					r_bit_cnt 	<= r_bit_cnt + "0001";
 				
 				when "0100" =>
-					o_sda 		<= i_bus_addr_rw(2);
+					o_sda 		<= r_bus_addr_rw(2);
 					r_bit_cnt 	<= r_bit_cnt + "0001";
 				
 				when "0101" =>
-					o_sda 		<= i_bus_addr_rw(1);
+					o_sda 		<= r_bus_addr_rw(1);
 					r_bit_cnt 	<= r_bit_cnt + "0001";
 				
 				when "0110" =>
-					o_sda 		<= i_bus_addr_rw(0);
+					o_sda 		<= r_bus_addr_rw(0);
 					r_bit_cnt 	<= r_bit_cnt + "0001";
 				
 				when "0111" =>
@@ -123,37 +130,39 @@ begin
 			case r_bit_cnt is
 		
 			when "0000" =>
-				o_sda 		<= i_bus_data(6);
+				o_sda 		<= r_bus_data(6);
 				r_bit_cnt 	<= r_bit_cnt + "0001";
 				
 			when "0001" =>
-				o_sda 		<= i_bus_data(5);
+				o_sda 		<= r_bus_data(5);
 				r_bit_cnt 	<= r_bit_cnt + "0001";
 			
 			when "0010" =>
-				o_sda 		<= i_bus_data(4);
+				o_sda 		<= r_bus_data(4);
 				r_bit_cnt 	<= r_bit_cnt + "0001";
 				
 			when "0011" =>
-				o_sda 		<= i_bus_data(3);
+				o_sda 		<= r_bus_data(3);
 				r_bit_cnt 	<= r_bit_cnt + "0001";
 			
 			when "0100" =>
-				o_sda 		<= i_bus_data(2);
+				o_sda 		<= r_bus_data(2);
 				r_bit_cnt 	<= r_bit_cnt + "0001";
 			
 			when "0101" =>
-				o_sda 		<= i_bus_data(1);
+				o_sda 		<= r_bus_data(1);
 				r_bit_cnt 	<= r_bit_cnt + "0001";
 			
 			when "0110" =>
-				o_sda 		<= i_bus_data(0);
+				o_sda 		<= r_bus_data(0);
 				r_bit_cnt 	<= r_bit_cnt + "0001";
 			
 			when "0111" =>
 				o_sda 		<= 'Z';
 				r_state 		<= ack;
 				r_bit_cnt 	<= "0000";
+				r_bus_data	<= i_bus_data;
+				o_rdy			<= '1';
 				
 		
 			when others =>			
@@ -164,9 +173,11 @@ begin
 		
 		when ack =>
 		
+			o_rdy <= '0';
+			
 			if i_en = '1' then
 				r_state 	<= data_transmit;
-				o_sda 	<= i_bus_data(7);
+				o_sda 	<= r_bus_data(7);
 			else
 				r_state <= stop;
 			end if;
@@ -182,7 +193,7 @@ begin
 	end if;
 end process;
 
-r_scl 	<= '1' when r_state = addr_transmit or r_state = data_transmit or r_state = ack else i_clk;
+r_scl 	<= i_clk when r_state = addr_transmit or r_state = data_transmit or r_state = ack else '1';
 o_rdy 	<= '1'; --TODO: Implement this
 o_data 	<= (others => '0'); --todo
 o_scl 	<= r_scl;

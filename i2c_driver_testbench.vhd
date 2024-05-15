@@ -15,6 +15,7 @@ architecture rtl of i2c_driver_testbench is
 	signal sda				: std_logic := 'Z';
 	signal scl				: std_logic := 'Z';
 	signal i2c_rdy			: std_logic := 'Z';
+	signal i2c_data		: unsigned(7 downto 0);
 
 
 		
@@ -29,28 +30,73 @@ DUT: entity work.i2c_driver(rtl)
 		i_bus_addr_rw	=> bus_addr_rw,
 		i_bus_data		=> bus_data,
 		o_rdy				=> i2c_rdy,
-		o_data			=> open,
+		o_data			=> i2c_data,
       o_sda				=> sda,
       o_scl				=> scl);
 		
+--stimulus: process
+--begin
+--
+--	wait until rising_edge(test_clk);
+--	bus_addr_rw <= x"A7";
+--	bus_data 	<= x"55";
+--	i2c_en 		<= '1';
+--	wait until rising_edge(scl);
+--	bus_data 	<= x"DE";
+--	wait for 40 us;
+--	sda <= '0';
+--	wait for 5 us;
+--	sda <= 'Z';
+--
+--	
+--	wait;
+--
+--end process;
+
 stimulus: process
 begin
 
 	wait until rising_edge(test_clk);
-	bus_addr_rw <= x"A7";
+	bus_addr_rw <= x"A6";
 	bus_data 	<= x"55";
 	i2c_en 		<= '1';
 	wait until rising_edge(scl);
-	bus_data 	<= x"DE";
+	wait for 40 us;
+	sda 	<= '0';
+	i2c_en	<= '0';
+	wait for 5 us;
+	sda <= 'Z';
+	wait for 15 us;
+	bus_addr_rw <= x"A7";
+	bus_data 	<= x"66"; --should be irrelevent
+	i2c_en 		<= '1';
+	wait until rising_edge(scl);
 	wait for 40 us;
 	sda <= '0';
 	wait for 5 us;
-	sda <= 'Z';
+	sda <= '1';
+	wait for 5 us;
+	sda <= '0';
+	wait for 5 us;
+	sda <= '1';
+	wait for 5 us;
+	sda <= '0';
+	wait for 5 us;
+	sda <= '1';
+	wait for 5 us;
+	sda <= '0';
+	wait for 5 us;
+	sda <= '1';
+	wait for 5 us;
+	sda <= '1';
+	
+	
 
 	
 	wait;
 
 end process;
+
 
 
 end architecture;

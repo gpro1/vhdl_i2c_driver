@@ -35,13 +35,13 @@ end i2c_driver;
 
 architecture rtl of i2c_driver is
 
-	type 		t_i2c_state is (idle, start, addr_transmit, data_transmit, ack, stop);
+	type 		t_i2c_state is (idle, start, addr_transmit, data_transmit, data_read, ack, stop);
 	signal 	r_state 		: t_i2c_state := idle;
-	--signal 	r_state_1	: t_i2c_state := idle;
+
 	signal	r_en_0 		: std_logic := '0';
-	--signal	r_sda			: std_logic := '1';
 	signal 	r_scl 		: std_logic := '1';
 	signal	r_bit_cnt	: unsigned(3 downto 0) := (others => '0');
+	signal 	r_data		: unsigned(7 downto 0) := (others => '0');
 	
 	signal r_bus_addr_rw : unsigned(7 downto 0) := (others => '0');
 	signal r_bus_data 	: unsigned(7 downto 0) := (others => '0');
@@ -169,15 +169,60 @@ begin
 			
 			end case;
 		
+		when data_read =>
 		
+			case r_bit_cnt is
+		
+			when "0000" =>
+				r_data(7) 	<= o_sda;
+				r_bit_cnt 	<= r_bit_cnt + "0001";
+				
+			when "0001" =>
+				r_data(6) 	<= o_sda;
+				r_bit_cnt 	<= r_bit_cnt + "0001";
+			
+			when "0010" =>
+				r_data(5) 	<= o_sda;
+				r_bit_cnt 	<= r_bit_cnt + "0001";
+				
+			when "0011" =>
+				r_data(4) 	<= o_sda;
+				r_bit_cnt 	<= r_bit_cnt + "0001";
+			
+			when "0100" =>
+				r_data(3) 	<= o_sda;
+				r_bit_cnt 	<= r_bit_cnt + "0001";
+			
+			when "0101" =>
+				r_data(2) 	<= o_sda;
+				r_bit_cnt 	<= r_bit_cnt + "0001";
+			
+			when "0110" =>
+				r_data(1) 	<= o_sda;
+				r_bit_cnt 	<= r_bit_cnt + "0001";
+			
+			when "0111" =>
+				r_data(0) 	<= o_sda;
+				o_sda			<= '1';
+				r_state 		<= stop;
+				r_bit_cnt 	<= "0000";
+				
+		
+			when others =>			
+			
+			end case;			
+			
 		
 		when ack =>
 		
 			o_rdy <= '0';
 			
-			if i_en = '1' then
+			if i_en = '1' and r_bus_addr_rw(0) = '0' then
 				r_state 	<= data_transmit;
 				o_sda 	<= r_bus_data(7);
+			elsif i_en = '1' and r_bus_addr_rw(0) = '1' then
+				r_state 	<= data_read;
+				o_sda		<= 'Z';
 			else
 				r_state <= stop;
 			end if;
@@ -186,6 +231,7 @@ begin
 		
 			o_sda 	<= '1';
 			r_State 	<= idle;
+			o_data	<= r_data;
 		
 		
 		
@@ -193,9 +239,12 @@ begin
 	end if;
 end process;
 
-r_scl 	<= i_clk when r_state = start or r_state = addr_transmit or r_state = data_transmit or r_state = ack else '1';
-
-o_data 	<= (others => '0'); --todo
+r_scl 	<= i_clk when r_state = start or 
+								r_state = data_read or 
+								r_state = addr_transmit or 
+								r_state = data_transmit or 
+								r_state = ack 
+								else '1';
 o_scl 	<= r_scl;
 
 

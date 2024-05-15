@@ -42,7 +42,7 @@ begin
 	i2c_en 		<= '1';
 	wait until rising_edge(scl);
 	bus_data 	<= x"DE";
-	wait for 37.5 us;
+	wait for 40 us;
 	sda <= '0';
 	wait for 5 us;
 	sda <= 'Z';

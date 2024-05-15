@@ -54,7 +54,7 @@ begin
 i2c_state_machine: process(i_clk)
 begin
 
-	if falling_edge(i_clk) then
+	if rising_edge(i_clk) then
 	
 		r_en_0 		<= i_en;
 		--r_state_1 	<= r_state;
@@ -193,8 +193,8 @@ begin
 	end if;
 end process;
 
-r_scl 	<= i_clk when r_state = addr_transmit or r_state = data_transmit or r_state = ack else '1';
-o_rdy 	<= '1'; --TODO: Implement this
+r_scl 	<= i_clk when r_state = start or r_state = addr_transmit or r_state = data_transmit or r_state = ack else '1';
+
 o_data 	<= (others => '0'); --todo
 o_scl 	<= r_scl;
 

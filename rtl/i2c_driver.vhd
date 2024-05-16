@@ -7,11 +7,18 @@
 --
 -- Desc: 
 --
+--	Basic I2C Master driver. Supports reading and writing. 
+-- Only supports single byte reads. Supports multi-byte writes.
 --
---
---
---
---
+-- i_clk 			- clock source for the module and SCL
+-- i_en				- I2C Enable. Set this high to start a transaction
+-- i_bus_addr_rw 	- 7 bit address [7..1] read/active lo write [0]
+-- i_bus_data		- Transmit data input
+-- o_rdy				- When writing, indicates when transmission is complete and new data can be provided
+--						- When reading, indicates when o_data is valid.
+-- o_data			- Read data output
+-- o_scl				- I2C SCL output
+-- o_sda				- I2C SDA I/O
 --------------------------------------------------------------------------------------
 
 library ieee;
@@ -24,7 +31,7 @@ entity i2c_driver is
 	i_en				: in std_logic; --Enable to start and stop a transaction.
 	i_bus_addr_rw	: in unsigned(7 downto 0); -- I2C Address (7..1) R/W (0)
 	i_bus_data		: in unsigned(7 downto 0); --bus data
-	o_rdy				: out std_logic; --Indicates when I2C driver is ready for new data
+	o_rdy				: out std_logic; --Indicates when I2C driver is ready 
 	o_data			: out unsigned(7 downto 0); --Parallel data output for reads
 	o_sda				: inout std_logic; --SDA line
 	o_scl				: out std_logic --SCL line
@@ -44,8 +51,6 @@ architecture rtl of i2c_driver is
 	
 	signal r_bus_addr_rw : unsigned(7 downto 0) := (others => '0');
 	signal r_bus_data 	: unsigned(7 downto 0) := (others => '0');
-	
-	
 
 begin
 
@@ -56,7 +61,6 @@ begin
 	if rising_edge(i_clk) then
 	
 		r_en_0 		<= i_en;
-		--r_state_1 	<= r_state;
 	
 		case r_state is
 		
@@ -66,13 +70,13 @@ begin
 				
 				o_sda 			<= '0';
 				r_state 			<= start;
-				--o_rdy				<= '1';
 				r_bus_addr_rw 	<= i_bus_addr_rw;
 				r_bus_data		<= i_bus_data;
+				o_rdy				<= '0';
 				
 			else
 				o_sda 			<= '1';
-				--o_rdy 			<= '0';
+				o_rdy 			<= '1';
 				
 			end if;
 		
@@ -80,7 +84,6 @@ begin
 		
 			o_sda 	<= r_bus_addr_rw(7);
 			r_state	<= addr_transmit;
-			--o_rdy 	<= '0';
 			
 		when addr_transmit =>
 					
@@ -160,9 +163,8 @@ begin
 				o_sda 		<= 'Z';
 				r_state 		<= ack;
 				r_bit_cnt 	<= "0000";
-				r_bus_data	<= i_bus_data;
-				--o_rdy			<= '1';
-				
+				r_bus_data	<= i_bus_data;	
+				o_rdy 		<= '1';
 		
 			when others =>			
 			
@@ -201,11 +203,11 @@ begin
 				r_bit_cnt 	<= r_bit_cnt + "0001";
 			
 			when "0111" =>
-				--r_data(0) 	<= o_sda;
 				o_data		<= r_data(7 downto 1) & o_sda;
 				o_sda			<= '1';
 				r_state 		<= stop;
 				r_bit_cnt 	<= "0000";
+				o_rdy 		<= '1';
 				
 		
 			when others =>			
@@ -214,8 +216,6 @@ begin
 			
 		
 		when ack =>
-		
-			--o_rdy <= '0';
 			
 			if i_en = '1' and r_bus_addr_rw(0) = '0' then
 				r_state 	<= data_transmit;
@@ -231,10 +231,8 @@ begin
 		when stop =>
 		
 			o_sda 	<= '1';
-			r_State 	<= idle;
-			--o_data	<= r_data;
-		
-		
+			o_rdy 	<= '1';
+			r_State 	<= idle;	
 		
 		end case;
 	end if;
@@ -247,9 +245,6 @@ o_scl <= i_clk when r_state = start or
 							r_state = ack 
 							else '1';
 
-o_rdy 	<= '1' when r_state = idle or
-							r_state = stop
-							else '0';
 
 
 

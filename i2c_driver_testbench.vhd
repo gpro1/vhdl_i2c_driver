@@ -35,25 +35,6 @@ DUT: entity work.i2c_driver(rtl)
 		o_data			=> i2c_data,
       o_sda				=> sda,
       o_scl				=> scl);
-		
---stimulus: process
---begin
---
---	wait until rising_edge(test_clk);
---	bus_addr_rw <= x"A7";
---	bus_data 	<= x"55";
---	i2c_en 		<= '1';
---	wait until rising_edge(scl);
---	bus_data 	<= x"DE";
---	wait for 40 us;
---	sda <= '0';
---	wait for 5 us;
---	sda <= 'Z';
---
---	
---	wait;
---
---end process;
 
 stimulus: process
 begin

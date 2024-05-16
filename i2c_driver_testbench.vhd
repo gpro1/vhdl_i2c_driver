@@ -132,10 +132,14 @@ begin
 		wait until rising_edge(scl);
 	end loop;
 	
+	--Disable module
+	i2c_en	<= '0';
+	
+	wait until rising_edge(test_clk);
 	wait until rising_edge(test_clk);
 
 	--Verify correct parallel data out
-	assert(i2c_data = i2c_data_test) report "Incorrect data detected at time: " &time'image(now) severity error;
+	assert(i2c_data = x"AB") report "Incorrect data detected at time: " &time'image(now) severity error;
 	
 	
 	wait;

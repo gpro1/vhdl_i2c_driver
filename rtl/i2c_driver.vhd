@@ -39,7 +39,6 @@ architecture rtl of i2c_driver is
 	signal 	r_state 		: t_i2c_state := idle;
 
 	signal	r_en_0 		: std_logic := '0';
-	signal 	r_scl 		: std_logic := '1';
 	signal	r_bit_cnt	: unsigned(3 downto 0) := (others => '0');
 	signal 	r_data		: unsigned(7 downto 0) := (others => '0');
 	
@@ -67,13 +66,13 @@ begin
 				
 				o_sda 			<= '0';
 				r_state 			<= start;
-				o_rdy				<= '1';
+				--o_rdy				<= '1';
 				r_bus_addr_rw 	<= i_bus_addr_rw;
 				r_bus_data		<= i_bus_data;
 				
 			else
 				o_sda 			<= '1';
-				o_rdy 			<= '0';
+				--o_rdy 			<= '0';
 				
 			end if;
 		
@@ -81,7 +80,7 @@ begin
 		
 			o_sda 	<= r_bus_addr_rw(7);
 			r_state	<= addr_transmit;
-			o_rdy 	<= '0';
+			--o_rdy 	<= '0';
 			
 		when addr_transmit =>
 					
@@ -162,7 +161,7 @@ begin
 				r_state 		<= ack;
 				r_bit_cnt 	<= "0000";
 				r_bus_data	<= i_bus_data;
-				o_rdy			<= '1';
+				--o_rdy			<= '1';
 				
 		
 			when others =>			
@@ -202,7 +201,8 @@ begin
 				r_bit_cnt 	<= r_bit_cnt + "0001";
 			
 			when "0111" =>
-				r_data(0) 	<= o_sda;
+				--r_data(0) 	<= o_sda;
+				o_data		<= r_data(7 downto 1) & o_sda;
 				o_sda			<= '1';
 				r_state 		<= stop;
 				r_bit_cnt 	<= "0000";
@@ -215,7 +215,7 @@ begin
 		
 		when ack =>
 		
-			o_rdy <= '0';
+			--o_rdy <= '0';
 			
 			if i_en = '1' and r_bus_addr_rw(0) = '0' then
 				r_state 	<= data_transmit;
@@ -225,13 +225,14 @@ begin
 				o_sda		<= 'Z';
 			else
 				r_state <= stop;
+				o_sda <= '0';
 			end if;
 		
 		when stop =>
 		
 			o_sda 	<= '1';
 			r_State 	<= idle;
-			o_data	<= r_data;
+			--o_data	<= r_data;
 		
 		
 		
@@ -239,13 +240,17 @@ begin
 	end if;
 end process;
 
-r_scl 	<= i_clk when r_state = start or 
-								r_state = data_read or 
-								r_state = addr_transmit or 
-								r_state = data_transmit or 
-								r_state = ack 
-								else '1';
-o_scl 	<= r_scl;
+o_scl <= i_clk when r_state = start or 
+							r_state = data_read or 
+							r_state = addr_transmit or 
+							r_state = data_transmit or 
+							r_state = ack 
+							else '1';
+
+o_rdy 	<= '1' when r_state = idle or
+							r_state = stop
+							else '0';
+
 
 
 end rtl;

@@ -134,10 +134,12 @@ begin
 			when "0000" =>
 				o_sda 		<= r_bus_data(6);
 				r_bit_cnt 	<= r_bit_cnt + "0001";
+				o_rdy 		<= '1';
 				
 			when "0001" =>
 				o_sda 		<= r_bus_data(5);
 				r_bit_cnt 	<= r_bit_cnt + "0001";
+				o_rdy			<= '0';
 			
 			when "0010" =>
 				o_sda 		<= r_bus_data(4);
@@ -163,8 +165,8 @@ begin
 				o_sda 		<= 'Z';
 				r_state 		<= ack;
 				r_bit_cnt 	<= "0000";
-				r_bus_data	<= i_bus_data;	
-				o_rdy 		<= '1';
+	
+				
 		
 			when others =>			
 			
@@ -218,8 +220,10 @@ begin
 		when ack =>
 			
 			if i_en = '1' and r_bus_addr_rw(0) = '0' then
-				r_state 	<= data_transmit;
-				o_sda 	<= r_bus_data(7);
+				r_state 		<= data_transmit;
+				r_bus_data	<= i_bus_data;	
+				o_sda 		<= i_bus_data(7);
+				
 			elsif i_en = '1' and r_bus_addr_rw(0) = '1' then
 				r_state 	<= data_read;
 				o_sda		<= 'Z';

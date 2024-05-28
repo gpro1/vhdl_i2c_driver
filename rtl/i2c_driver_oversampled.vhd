@@ -259,7 +259,7 @@ begin
 			
 			when "0111" =>
 				o_data		<= r_rcv_data(7 downto 1) & o_sda;
-				o_sda			<= '1';
+				o_sda			<= '0';
 				r_state 		<= stop;
 				r_bit_cnt 	<= "0000";
 				o_rdy 		<= '1';

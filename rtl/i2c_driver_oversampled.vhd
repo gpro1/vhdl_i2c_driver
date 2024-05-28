@@ -29,7 +29,8 @@ use ieee.numeric_std.all;
 entity i2c_driver_oversampled is
  generic (
 	G_INPUT_CLOCK 	: integer := 50_000_000; --System clock used in this module;
-	G_BUS_CLOCK		: integer := 100_000; --The I2C clock frequency to be generated on SCL
+	G_BUS_CLOCK		: integer := 100_000 --The I2C clock frequency to be generated on SCL
+	);
  port (
 	i_clk				: in std_logic; --Input clock.
 	i_en				: in std_logic; --Enable to start and stop a transaction.

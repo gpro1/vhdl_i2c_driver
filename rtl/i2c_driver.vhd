@@ -10,6 +10,8 @@
 --	Basic I2C Master driver. Supports reading and writing. 
 -- Only supports single byte reads. Supports multi-byte writes.
 --
+--	Update: Does not work practically due to timing issues
+--
 -- i_clk 			- clock source for the module and SCL
 -- i_en				- I2C Enable. Set this high to start a transaction
 -- i_bus_addr_rw 	- 7 bit address [7..1] read/active lo write [0]

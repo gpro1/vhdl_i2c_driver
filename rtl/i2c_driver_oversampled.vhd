@@ -68,6 +68,7 @@ architecture rtl of i2c_driver_oversampled is
 
 begin
 
+--Generate clocks for SDA and SCL with a 50% phase difference
 INTERNAL_CLOCK_GEN : process (i_clk)
 begin
 	
@@ -106,6 +107,199 @@ begin
 	end if;
 	
 end process;
+
+i2c_state_machine: process(r_sda_clk)
+begin
+
+	if rising_edge(r_sda_clk) then
+	
+		r_en_1 		<= i_en;
+	
+		case r_state is
+		
+		when idle =>
+			
+			if r_en_1 = '0' and i_en = '1' then -- Latch data, Pull SDA low, start transmission
+				
+				o_sda 			<= '0';
+				o_rdy				<= '0';
+				r_bus_addr_rw 	<= i_bus_addr_rw;
+				r_bus_data		<= i_bus_data;
+				r_state 			<= start;
+				
+			else
+				o_sda 			<= '1';
+				o_rdy 			<= '1';
+				
+			end if;
+		
+		when start =>
+		
+			o_sda 	<= r_bus_addr_rw(7);
+			r_state	<= addr_transmit;
+			
+		when addr_transmit =>
+					
+			case r_bit_cnt is
+			
+				when "0000" =>
+					o_sda 		<= r_bus_addr_rw(6);
+					r_bit_cnt 	<= r_bit_cnt + "0001";
+					
+				when "0001" =>
+					o_sda 		<= r_bus_addr_rw(5);
+					r_bit_cnt 	<= r_bit_cnt + "0001";
+				
+				when "0010" =>
+					o_sda 		<= r_bus_addr_rw(4);
+					r_bit_cnt 	<= r_bit_cnt + "0001";
+					
+				when "0011" =>
+					o_sda 		<= r_bus_addr_rw(3);
+					r_bit_cnt 	<= r_bit_cnt + "0001";
+				
+				when "0100" =>
+					o_sda 		<= r_bus_addr_rw(2);
+					r_bit_cnt 	<= r_bit_cnt + "0001";
+				
+				when "0101" =>
+					o_sda 		<= r_bus_addr_rw(1);
+					r_bit_cnt 	<= r_bit_cnt + "0001";
+				
+				when "0110" =>
+					o_sda 		<= r_bus_addr_rw(0);
+					r_bit_cnt 	<= r_bit_cnt + "0001";
+				
+				when "0111" =>
+					o_sda 		<= 'Z';
+					r_state 		<= ack;
+					r_bit_cnt 	<= "0000";
+					
+			
+				when others =>			
+				
+			end case;
+		
+		when data_transmit =>
+		
+			case r_bit_cnt is
+		
+			when "0000" =>
+				o_sda 		<= r_bus_data(6);
+				r_bit_cnt 	<= r_bit_cnt + "0001";
+				o_rdy 		<= '1';
+				
+			when "0001" =>
+				o_sda 		<= r_bus_data(5);
+				r_bit_cnt 	<= r_bit_cnt + "0001";
+				o_rdy			<= '0';
+			
+			when "0010" =>
+				o_sda 		<= r_bus_data(4);
+				r_bit_cnt 	<= r_bit_cnt + "0001";
+				
+			when "0011" =>
+				o_sda 		<= r_bus_data(3);
+				r_bit_cnt 	<= r_bit_cnt + "0001";
+			
+			when "0100" =>
+				o_sda 		<= r_bus_data(2);
+				r_bit_cnt 	<= r_bit_cnt + "0001";
+			
+			when "0101" =>
+				o_sda 		<= r_bus_data(1);
+				r_bit_cnt 	<= r_bit_cnt + "0001";
+			
+			when "0110" =>
+				o_sda 		<= r_bus_data(0);
+				r_bit_cnt 	<= r_bit_cnt + "0001";
+			
+			when "0111" =>
+				o_sda 		<= 'Z';
+				r_state 		<= ack;
+				r_bit_cnt 	<= "0000";
+	
+				
+		
+			when others =>			
+			
+			end case;
+		
+		when data_read =>
+		
+			case r_bit_cnt is
+		
+			when "0000" =>
+				r_rcv_data(7) 	<= o_sda;
+				r_bit_cnt 	<= r_bit_cnt + "0001";
+				
+			when "0001" =>
+				r_rcv_data(6) 	<= o_sda;
+				r_bit_cnt 	<= r_bit_cnt + "0001";
+			
+			when "0010" =>
+				r_rcv_data(5) 	<= o_sda;
+				r_bit_cnt 	<= r_bit_cnt + "0001";
+				
+			when "0011" =>
+				r_rcv_data(4) 	<= o_sda;
+				r_bit_cnt 	<= r_bit_cnt + "0001";
+			
+			when "0100" =>
+				r_rcv_data(3) 	<= o_sda;
+				r_bit_cnt 	<= r_bit_cnt + "0001";
+			
+			when "0101" =>
+				r_rcv_data(2) 	<= o_sda;
+				r_bit_cnt 	<= r_bit_cnt + "0001";
+			
+			when "0110" =>
+				r_rcv_data(1) 	<= o_sda;
+				r_bit_cnt 	<= r_bit_cnt + "0001";
+			
+			when "0111" =>
+				o_data		<= r_rcv_data(7 downto 1) & o_sda;
+				o_sda			<= '1';
+				r_state 		<= stop;
+				r_bit_cnt 	<= "0000";
+				o_rdy 		<= '1';
+				
+		
+			when others =>			
+			
+			end case;			
+			
+		
+		when ack =>
+			
+			if i_en = '1' and r_bus_addr_rw(0) = '0' then
+				r_state 		<= data_transmit;
+				r_bus_data	<= i_bus_data;	
+				o_sda 		<= i_bus_data(7);
+				
+			elsif i_en = '1' and r_bus_addr_rw(0) = '1' then
+				r_state 	<= data_read;
+				o_sda		<= 'Z';
+			else
+				r_state <= stop;
+				o_sda <= '0';
+			end if;
+		
+		when stop =>
+		
+			o_sda 	<= '1';
+			o_rdy 	<= '1';
+			r_State 	<= idle;	
+		
+		end case;
+	end if;
+end process;
+
+o_scl <= r_scl_clk when r_state = data_read or 
+							r_state = addr_transmit or 
+							r_state = data_transmit or 
+							r_state = ack 
+							else '1';
 
 
 end rtl;
